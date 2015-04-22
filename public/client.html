@@ -1,0 +1,232 @@
+<html>
+<head>
+    <title>AI HOME Manager</title>
+</head>
+<body>
+<style>
+    .title{
+        border-bottom: 1px solid #0ca3d2;
+        width: 100%
+    }
+    .clearfix:after {
+        content: "";
+        display: table;
+        clear: both;
+    }
+
+    .title-item{
+        float:left;
+        padding: 20px;
+        font-size: 1.25rem;
+    }
+
+    .title-item:hover{
+        cursor: pointer;
+    }
+
+    .menu-item{
+        margin: 10px;
+        width: 50px;
+        height: 50px;
+        cursor: pointer;
+    }
+
+    .icon-light{
+        background: url('lightbulb.png') center/ 100% 100%;
+    }
+
+    .icon-tv{
+        background: url('tv.png') center/ 100% 100%;
+    }
+
+    .tv-on{
+        background: url('tv_on.jpg') center/ 100% 100%;
+        width: 500px;
+        height: 300px;
+        cursor: pointer;
+    }
+
+    .tv-off{
+        background: url('tv_off.jpg') center/ 100% 100%;
+        width: 500px;
+        height: 300px;
+        cursor: pointer;
+    }
+
+    .icon-camera{
+        background: url('camera.png') center/  82% 69% no-repeat;
+    }
+
+    .icon-message{
+        background: url('message.jpg') center/  82% 69% no-repeat;
+    }
+
+    .light {
+        background: url("light.jpg") no-repeat;
+        width: 405px;
+        height: 604px;
+        cursor: pointer;
+    }
+
+    .light-off{
+        background-position:left -23px center;
+    }
+
+    .light-on {
+        background-position: right -46px center;
+    }
+
+    .button-image{
+        background-color: #A9E2F3;
+        border: 1px solid #0ca3d2;
+        width: 300px;
+        height: 30px;
+        cursor: pointer;
+    }
+
+    .button-play{
+        background-color: green;
+        width: 100px;
+        height: 30px;
+        color: white;
+        border-radius: 15px;
+        outline: none;
+        cursor: pointer;
+    }
+</style>
+<time></time>
+
+<div class="clearfix title">
+    <div class="title-item" id="homeTab">Home</div>
+    <div class="title-item" id="controlTab">Control</div>
+</div>
+
+<div id="homePanel" style="padding: 20px;">
+    <p>AI HOME Configuration Manager V1.0</p>
+    <p>Firmware version x.x</p>
+    <p>Copyright 2015 AI HOME</p>
+</div>
+
+<div id="controlPanel" style="display: none">
+
+    <div id="container" style="width: 20%;float: left; border-right: 1px solid #0ca3d2; height: 100%;">
+        <div class="menu-item icon-light" data-panel="lightPanel"></div>
+        <div class="menu-item icon-tv" data-panel="tvPanel"></div>
+        <div class="menu-item icon-camera" data-panel="cameraPanel"></div>
+        <div class="menu-item icon-message" data-panel="messagePanel"></div>
+    </div>
+
+    <div style="float: left; padding:20px;">
+
+        <div id="lightPanel" class="panel">
+            <div class="light light-off"></div>
+        </div>
+
+        <div id="tvPanel" class="panel" style="display: none">
+            <div class="tv-on" style="display: none;" data-command="tvOn"></div>
+            <div class="tv-off"  data-command="tvOff"></div>
+        </div>
+
+        <div id="cameraPanel" class="panel" style="display: none">
+            <input type="button" value="Get image" data-command="image" class="button-image"/>
+            <div>
+                <img id="image" src="monitor.jpg" style="padding: 20px 0;transition: all 0.2s;"/>
+            </div>
+        </div>
+
+        <div id="messagePanel" class="panel" style="display: none">
+            <audio id="audio" src="cnhk.mp3" type="audio/mpeg"></audio>
+            <button id="play" class="button-play">Play</button>
+        </div>
+    </div>
+</div>
+
+<script src="socket.io/socket.io.js"></script>
+<script src="http://code.jquery.com/jquery-1.7.1.min.js"></script>
+<script>
+
+    document.cookie='user_id=8dafe6c1-4092-4a50-ac64-2029b32520e2';
+
+    $(document).on('click', '.button-image', function(){
+        var command = $(this).data('command');
+        $.get('/control?command=' + command);
+
+        $('#image').css('opacity', '0');
+
+        setTimeout(function(){
+            $('#image').css('opacity', '1');
+        }, 200)
+        var refreshIntervalId= setInterval(function(){
+            console.log('test');
+            $.get( '/image.png', function(){
+                $('#image').attr('src' , '/image.png');
+                clearInterval(refreshIntervalId);
+            });
+
+        },500);
+
+    });
+
+    $(document).on('click', '.light-on',function(){
+        $(this).toggleClass('light-on');
+        $(this).toggleClass('light-off');
+        $.get('/control?command=lightOff');
+    });
+    $(document).on('click', '.light-off',function(){
+        $(this).toggleClass('light-on');
+        $(this).toggleClass('light-off');
+        $.get('/control?command=lightOn');
+    });
+
+    $(document).on('click', '.tv-on',function(){
+        $(this).toggleClass('tv-on');
+        $(this).toggleClass('tv-off');
+        $.get('/control?command=tvOff');
+    });
+
+    $(document).on('click', '.tv-off',function(){
+        $(this).toggleClass('tv-on');
+        $(this).toggleClass('tv-off');
+        $.get('/control?command=tvOn');
+    });
+
+    $(document).on('click', '#homeTab',function(){
+        $('#homePanel').show();
+        $('#controlPanel').hide();
+    });
+
+    $(document).on('click', '#controlTab',function(){
+        $('#homePanel').hide();
+        $('#controlPanel').show();
+    })
+
+    $(document).on('click','.menu-item', function(){
+        var panelId = $(this).data('panel');
+        $('.panel').hide();
+        $('#' + panelId).show();
+    });
+
+    var player = document.getElementById('audio');
+    var count = 0;
+    $('#play').click(function(){
+        if(count%2 ==0) {
+            player.play();
+            this.innerHTML='Pause';
+        }else {
+            player.pause();
+            this.innerHTML='Play';
+        }
+        count++;
+    });
+//    var socket = io.connect('http://localhost');
+//    socket.emit('join', 1);
+//    // on every message recived we print the new datas inside the #container div
+//    socket.on('update', function (data) {
+//        // convert the json string into a valid javascript object
+//
+//        $('#container').html(data.text);
+//        $('time').html('Last Update:' + data.time);
+//    });
+</script>
+</body>
+</html>
